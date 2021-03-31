@@ -1,6 +1,7 @@
 <html>
 <head>
-<style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
 body {
   margin: 0;
   padding:0;
@@ -64,6 +65,8 @@ let coord = { x: 0, y: 0 };
 let bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
 canvas.addEventListener("mousedown", start);
 canvas.addEventListener("mouseup", stop);
+canvas.addEventListener("touchstart", start);
+canvas.addEventListener("touchend", stop);
 document.getElementById("clear").addEventListener("click", clear);
 window.addEventListener("resize", resize);
 
@@ -74,9 +77,14 @@ function resize() {
   ctx.canvas.height = window.innerHeight;
 }
 function reposition(event) {
-  coord.x = event.clientX - canvas.offsetLeft;
-  coord.y = event.clientY - canvas.offsetTop;
-
+  if(event.type == 'touchmove'){
+    let touch = event.originalEvent?(event.originalEvent.touches[0] || event.originalEvent.changedTouches[0]):event.touches[0];
+    coord.x = touch.pageX;
+    coord.y = touch.pageY;
+  } else {
+    coord.x = event.clientX - canvas.offsetLeft;
+    coord.y = event.clientY - canvas.offsetTop;
+  }
   if(coord.x > bounds.x.max) bounds.x.max = coord.x;
   if(coord.y > bounds.y.max) bounds.y.max = coord.y;
   if(coord.x < bounds.x.min) bounds.x.min = coord.x;
@@ -84,10 +92,13 @@ function reposition(event) {
 }
 function start(event) {
   document.addEventListener("mousemove", draw);
+  document.addEventListener("touchmove", draw);
   reposition(event);
 }
 function stop() {
   document.removeEventListener("mousemove", draw);
+  document.removeEventListener("touchmove", draw);
+
   var hiddenCanvas = document.createElement('canvas');
   hiddenCanvas.style.display = 'none';
   document.body.appendChild(hiddenCanvas);
@@ -155,10 +166,6 @@ function increaseBrightness(hex, percent){
         g = parseInt(hex.substr(2, 2), 16),
         b = parseInt(hex.substr(4, 2), 16);
 
-        console.log( '#' +
-       ((0|(1<<8) + ( r) * percent).toString(16)).substr(1) +
-       ((0|(1<<8) + (g) * percent).toString(16)).substr(1) +
-       ((0|(1<<8) + ( b) * percent).toString(16)).substr(1))
     return '#' +
        ((0|(1<<8) + ( r) * percent).toString(16)).substr(1) +
        ((0|(1<<8) + ( g) * percent).toString(16)).substr(1) +
