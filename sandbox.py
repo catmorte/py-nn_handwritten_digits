@@ -3,7 +3,7 @@ from PIL import Image
 from flask import Flask, jsonify, render_template, request
 from digits_model.digits import predict_digit_from_img
 import tensorflow as tf
-
+import os
 app = Flask(__name__)
 
 
@@ -20,4 +20,4 @@ def recognize():
 
 
 if __name__ == "__main__":
-    app.run('0.0.0.0', port=8080)
+    app.run('0.0.0.0', port=int(os.environ.get('PORT', 8080)))
