@@ -1,0 +1,169 @@
+<html>
+<head>
+<style>
+body {
+  margin: 0;
+  padding:0;
+}
+nav {
+  position: fixed;
+  width: 100%;
+  margin: 0;
+  padding:0;
+  display: flex;
+  flex-direction: column;
+}
+#clear {
+  border: 0;
+  background: #000000;
+  color: #ffffff;
+  width: 100%;
+  padding: 1rem;
+}
+.digits {
+  width: 100%;
+  display: flex !important;
+  flex-direction: row;
+}
+.digit {
+  flex: 1;
+  background: #777777;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+#canvas {
+  flex:1;
+  width: 100%;
+  height: 100%;
+}
+</style>
+</head>
+<body>
+<nav>
+  <button id="clear">Clear</button>
+  <div class="digits">
+    <div id="d_0" class="digit">0</div>
+    <div id="d_1" class="digit">1</div>
+    <div id="d_2" class="digit">2</div>
+    <div id="d_3" class="digit">3</div>
+    <div id="d_4" class="digit">4</div>
+    <div id="d_5" class="digit">5</div>
+    <div id="d_6" class="digit">6</div>
+    <div id="d_7" class="digit">7</div>
+    <div id="d_8" class="digit">8</div>
+    <div id="d_9" class="digit">9</div>
+  </div>
+</nav>
+<canvas id="canvas"></canvas>
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const digits = document.querySelectorAll('.digit');
+let coord = { x: 0, y: 0 };
+let bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
+canvas.addEventListener("mousedown", start);
+canvas.addEventListener("mouseup", stop);
+document.getElementById("clear").addEventListener("click", clear);
+window.addEventListener("resize", resize);
+
+resize();
+
+function resize() {
+  ctx.canvas.width = window.innerWidth;
+  ctx.canvas.height = window.innerHeight;
+}
+function reposition(event) {
+  coord.x = event.clientX - canvas.offsetLeft;
+  coord.y = event.clientY - canvas.offsetTop;
+
+  if(coord.x > bounds.x.max) bounds.x.max = coord.x;
+  if(coord.y > bounds.y.max) bounds.y.max = coord.y;
+  if(coord.x < bounds.x.min) bounds.x.min = coord.x;
+  if(coord.y < bounds.y.min) bounds.y.min = coord.y;
+}
+function start(event) {
+  document.addEventListener("mousemove", draw);
+  reposition(event);
+}
+function stop() {
+  document.removeEventListener("mousemove", draw);
+  var hiddenCanvas = document.createElement('canvas');
+  hiddenCanvas.style.display = 'none';
+  document.body.appendChild(hiddenCanvas);
+  let digit_width = bounds.x.max-bounds.x.min, digit_height = bounds.y.max-bounds.y.min
+  let size = Math.max(digit_width, digit_height) + 20
+  hiddenCanvas.width = size;
+  hiddenCanvas.height = size;
+
+  var hiddenCtx = hiddenCanvas.getContext('2d');
+  hiddenCtx.fillStyle = "white";
+  hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
+  hiddenCtx.drawImage(
+      canvas,
+      bounds.x.min-10,
+      bounds.y.min-10,
+      digit_width+20,
+      digit_height+20,
+      (size - digit_width)/2,
+      (size - digit_height)/2,
+      digit_width,
+      digit_height
+  );
+
+  hiddenCanvas.toBlob((blob) => {
+    var formData = new FormData();
+    formData.append("file", blob);
+    fetch("/recognize", { method: "POST", body: formData }).then(r => r.json()).then(d => {
+      for(let i in digits) digits[i].style="background:"+increaseBrightness("#ff0000", d[i]);
+
+    });
+  }, "image/jpeg", 0.90);
+}
+function draw(event) {
+  ctx.beginPath();
+  ctx.lineWidth = 10;
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "#000000";
+  ctx.moveTo(coord.x, coord.y);
+  reposition(event);
+  ctx.lineTo(coord.x, coord.y);
+  ctx.stroke();
+}
+function clear(){
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
+  for(let i in digits) digits[i].style="";
+}
+function debounce(func, delay) {
+  let inDebounce
+  return function() {
+    const context = this
+    const args = arguments
+    clearTimeout(inDebounce)
+    inDebounce = setTimeout(function(){
+      func.apply(context, args);
+    }, delay)
+  }
+}
+function increaseBrightness(hex, percent){
+    hex = hex.replace(/^\s*#|\s*$/g, '');
+    if(hex.length == 3){
+        hex = hex.replace(/(.)/g, '$1$1');
+    }
+    var r = parseInt(hex.substr(0, 2), 16),
+        g = parseInt(hex.substr(2, 2), 16),
+        b = parseInt(hex.substr(4, 2), 16);
+
+        console.log( '#' +
+       ((0|(1<<8) + ( r) * percent).toString(16)).substr(1) +
+       ((0|(1<<8) + (g) * percent).toString(16)).substr(1) +
+       ((0|(1<<8) + ( b) * percent).toString(16)).substr(1))
+    return '#' +
+       ((0|(1<<8) + ( r) * percent).toString(16)).substr(1) +
+       ((0|(1<<8) + ( g) * percent).toString(16)).substr(1) +
+       ((0|(1<<8) + ( b) * percent).toString(16)).substr(1);
+}
+</script>
+</body>
+</html>
