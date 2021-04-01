@@ -15,6 +15,7 @@ def index():
 @app.route('/recognize', methods=['POST'])
 def recognize():
     img = Image.open(request.files['file'].stream)
+    img.save("./img.png")
     prediction = predict_digit_from_img(img, is_negative=False)
     return str([x for x in prediction])
 

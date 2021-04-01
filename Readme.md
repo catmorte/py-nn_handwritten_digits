@@ -20,9 +20,13 @@ from PIL import Image
 tf.argmax(predict_digit_from_img(Image.open('...'), is_negative=False), 1)
 ```
 
-#### Run re-learn
+#### Run re-learn as Simple FF NN 
 ```
-python ./digits_model/digits.py
+python ./digits_model/sequentional.py
+```
+#### Run re-learn as Convolutional NN 
+```
+python ./digits_model/convolutional.py
 ```
 
 ## Docker
