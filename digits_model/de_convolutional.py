@@ -3,9 +3,9 @@ import tensorflow.keras as krs
 import pandas as pd
 
 if __name__ == "__main__":
-
     def transform_labels_value_to_array(val):
         return [1 if val == i else 0 for i in range(10)]
+
 
     def dataframe_to_dataset(df):
         df = df.copy()
@@ -43,14 +43,12 @@ if __name__ == "__main__":
 
     model.summary()
 
-
     model.compile(
-            optimizer=krs.optimizers.Adam(),
-            loss=krs.losses.Huber(),
-            metrics=[krs.metrics.BinaryCrossentropy()],
-        )
-    print(train_ds
-          )
+        optimizer=krs.optimizers.Adam(),
+        loss=krs.losses.Huber(),
+        metrics=[krs.metrics.BinaryCrossentropy()],
+    )
+
     model.fit(
         train_ds.repeat(),
         epochs=32,

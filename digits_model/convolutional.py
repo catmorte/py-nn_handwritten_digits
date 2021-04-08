@@ -3,7 +3,6 @@ import tensorflow.keras as krs
 import pandas as pd
 
 if __name__ == "__main__":
-
     def dataframe_to_dataset(df):
         df = df.copy()
         labels = df.pop("label")
@@ -32,10 +31,10 @@ if __name__ == "__main__":
     model.add(krs.layers.Dense(10, activation=tf.nn.softmax))
 
     model.compile(
-            optimizer=krs.optimizers.Adam(),
-            loss=krs.losses.SparseCategoricalCrossentropy(),
-            metrics=[krs.metrics.SparseCategoricalAccuracy()],
-        )
+        optimizer=krs.optimizers.Adam(),
+        loss=krs.losses.SparseCategoricalCrossentropy(),
+        metrics=[krs.metrics.SparseCategoricalAccuracy()],
+    )
     model.fit(
         train_ds.repeat(),
         epochs=16,
