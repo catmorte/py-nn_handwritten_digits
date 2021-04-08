@@ -42,6 +42,8 @@
       padding-top: 1rem;
       padding-bottom: 1rem;
       text-align: center;
+      cursor: pointer;
+      border: 0;
     }
 
     #canvas {
@@ -58,16 +60,16 @@
   <nav>
     <button id="clear">Clear</button>
     <div class="digits">
-      <div id="d_0" class="digit">0</div>
-      <div id="d_1" class="digit">1</div>
-      <div id="d_2" class="digit">2</div>
-      <div id="d_3" class="digit">3</div>
-      <div id="d_4" class="digit">4</div>
-      <div id="d_5" class="digit">5</div>
-      <div id="d_6" class="digit">6</div>
-      <div id="d_7" class="digit">7</div>
-      <div id="d_8" class="digit">8</div>
-      <div id="d_9" class="digit">9</div>
+      <button id="d_0" class="digit">0</button>
+      <button id="d_1" class="digit">1</button>
+      <button id="d_2" class="digit">2</button>
+      <button id="d_3" class="digit">3</button>
+      <button id="d_4" class="digit">4</button>
+      <button id="d_5" class="digit">5</button>
+      <button id="d_6" class="digit">6</button>
+      <button id="d_7" class="digit">7</button>
+      <button id="d_8" class="digit">8</button>
+      <button id="d_9" class="digit">9</button>
     </div>
   </nav>
   <canvas id="canvas"></canvas>
@@ -85,6 +87,7 @@
     window.addEventListener("resize", resize);
 
     resize();
+    let needToReset = false;
 
     digits.forEach(function (element) {
       element.addEventListener('click', drawYourself);
@@ -103,6 +106,7 @@
           let leftOffset = (width - imgSize)/2
           let topOffset = (height - imgSize)/2
           ctx.drawImage(img, leftOffset, topOffset, imgSize, imgSize);
+          needToReset = true;
         }
         img.src = outside;
       });
@@ -126,6 +130,10 @@
       if (coord.y < bounds.y.min) bounds.y.min = coord.y;
     }
     function start(event) {
+      if(needToReset) {
+        needToReset = false;
+        clear();
+      }
       document.addEventListener("mousemove", draw);
       document.addEventListener("touchmove", draw);
       reposition(event);
