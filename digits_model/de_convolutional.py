@@ -25,7 +25,6 @@ if __name__ == "__main__":
     val_ds = dataframe_to_dataset(val_dataframe)
     train_ds = train_ds.batch(1)
     val_ds = val_ds.batch(1)
-    print(train_ds)
     model = krs.Sequential()
 
     model.add(krs.layers.Dense(10, activation=tf.nn.relu, input_shape=(10,)))

@@ -1,6 +1,5 @@
 import tensorflow as tf
 import tensorflow.keras as krs
-import pandas as pd
 import numpy as np
 
 model = krs.models.load_model('./assets/trained_model')
