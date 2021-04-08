@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 
 model = krs.models.load_model('./assets/trained_model')
+modelDe = krs.models.load_model('./assets/trained_model_dec')
 
 
 def predict_digit_from_file(image_path, *, color_mode="grayscale", is_negative=False):
@@ -22,3 +23,9 @@ def predict_digit_from_img(img, *, is_negative=False):
         data = [255 - x for x in data]
     data = np.asarray(data).reshape((1, 784))
     return model.predict(data)[0]
+
+
+def predict_digit_from_dig_dec(digit):
+    data = np.zeros((1, 10))
+    data[0, digit] = 1
+    return modelDe.predict(data)[0].reshape(28, 28, 1)

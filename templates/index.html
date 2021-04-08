@@ -1,183 +1,213 @@
 <html>
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-body {
-  margin: 0;
-  padding:0;
-  overflow: hidden;
-}
-nav {
-  position: fixed;
-  width: 100%;
-  margin: 0;
-  padding:0;
-  display: flex;
-  flex-direction: column;
-}
-#clear {
-  border: 0;
-  background: #000000;
-  color: #ffffff;
-  width: 100%;
-  padding: 1rem;
-  margin:0;
-}
-.digits {
-  width: 100%;
-  display: flex !important;
-  flex-direction: row;
-}
-.digit {
-  flex: 1;
-  background: #777777;
-  color: white;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  text-align: center;
-}
-#canvas {
-  flex:1;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  touch-action:none;
-}
-</style>
-</head>
-<body>
-<nav>
-  <button id="clear">Clear</button>
-  <div class="digits">
-    <div id="d_0" class="digit">0</div>
-    <div id="d_1" class="digit">1</div>
-    <div id="d_2" class="digit">2</div>
-    <div id="d_3" class="digit">3</div>
-    <div id="d_4" class="digit">4</div>
-    <div id="d_5" class="digit">5</div>
-    <div id="d_6" class="digit">6</div>
-    <div id="d_7" class="digit">7</div>
-    <div id="d_8" class="digit">8</div>
-    <div id="d_9" class="digit">9</div>
-  </div>
-</nav>
-<canvas id="canvas"></canvas>
-<script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const digits = document.querySelectorAll('.digit');
-let coord = { x: 0, y: 0 };
-let bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
-canvas.addEventListener("mousedown", start);
-canvas.addEventListener("mouseup", stop);
-canvas.addEventListener("touchstart", start);
-canvas.addEventListener("touchend", stop);
-document.getElementById("clear").addEventListener("click", clear);
-window.addEventListener("resize", resize);
-
-resize();
-
-function resize() {
-  ctx.canvas.width = window.innerWidth;
-  ctx.canvas.height = window.innerHeight;
-}
-function reposition(event) {
-  if(event.type == 'touchmove'){
-    let touch = event.originalEvent?(event.originalEvent.touches[0] || event.originalEvent.changedTouches[0]):event.touches[0];
-    coord.x = touch.pageX;
-    coord.y = touch.pageY;
-  } else {
-    coord.x = event.clientX - canvas.offsetLeft;
-    coord.y = event.clientY - canvas.offsetTop;
-  }
-  if(coord.x > bounds.x.max) bounds.x.max = coord.x;
-  if(coord.y > bounds.y.max) bounds.y.max = coord.y;
-  if(coord.x < bounds.x.min) bounds.x.min = coord.x;
-  if(coord.y < bounds.y.min) bounds.y.min = coord.y;
-}
-function start(event) {
-  document.addEventListener("mousemove", draw);
-  document.addEventListener("touchmove", draw);
-  reposition(event);
-}
-function stop() {
-  document.removeEventListener("mousemove", draw);
-  document.removeEventListener("touchmove", draw);
-  let hiddenCanvas = document.getElementById("hidden_canvas");
-  if(hiddenCanvas) hiddenCanvas.parentNode.removeChild(hiddenCanvas);
-  hiddenCanvas = document.createElement('canvas');
-  hiddenCanvas.id = "hidden_canvas";
-  hiddenCanvas.style.display = 'none';
-  document.body.appendChild(hiddenCanvas);
-  let digit_width = bounds.x.max-bounds.x.min, digit_height = bounds.y.max-bounds.y.min
-  let size = Math.max(digit_width, digit_height) + 20
-  hiddenCanvas.width = size;
-  hiddenCanvas.height = size;
-
-  var hiddenCtx = hiddenCanvas.getContext('2d');
-  hiddenCtx.fillStyle = "white";
-  hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
-  hiddenCtx.drawImage(
-      canvas,
-      bounds.x.min-10,
-      bounds.y.min-10,
-      digit_width+20,
-      digit_height+20,
-      (size - digit_width)/2,
-      (size - digit_height)/2,
-      digit_width,
-      digit_height
-  );
-
-  hiddenCanvas.toBlob((blob) => {
-    var formData = new FormData();
-    formData.append("file", blob);
-    fetch("/recognize", { method: "POST", body: formData }).then(r => r.json()).then(d => {
-      for(let i in digits) digits[i].style="background:"+increaseBrightness("#ff0000", d[i]);
-
-    });
-  }, "image/jpeg", 0.90);
-}
-function draw(event) {
-  ctx.beginPath();
-  ctx.lineWidth = 10;
-  ctx.lineCap = "round";
-  ctx.strokeStyle = "#000000";
-  ctx.moveTo(coord.x, coord.y);
-  reposition(event);
-  ctx.lineTo(coord.x, coord.y);
-  ctx.stroke();
-}
-function clear(){
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
-  for(let i in digits) digits[i].style="";
-}
-function debounce(func, delay) {
-  let inDebounce
-  return function() {
-    const context = this
-    const args = arguments
-    clearTimeout(inDebounce)
-    inDebounce = setTimeout(function(){
-      func.apply(context, args);
-    }, delay)
-  }
-}
-function increaseBrightness(hex, percent){
-    hex = hex.replace(/^\s*#|\s*$/g, '');
-    if(hex.length == 3){
-        hex = hex.replace(/(.)/g, '$1$1');
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
     }
-    var r = parseInt(hex.substr(0, 2), 16),
+
+    nav {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #clear {
+      border: 0;
+      background: #000000;
+      color: #ffffff;
+      width: 100%;
+      padding: 1rem;
+      margin: 0;
+    }
+
+    .digits {
+      width: 100%;
+      display: flex !important;
+      flex-direction: row;
+    }
+
+    .digit {
+      flex: 1;
+      background: #777777;
+      color: white;
+      padding-top: 1rem;
+      padding-bottom: 1rem;
+      text-align: center;
+    }
+
+    #canvas {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      touch-action: none;
+    }
+  </style>
+</head>
+
+<body>
+  <nav>
+    <button id="clear">Clear</button>
+    <div class="digits">
+      <div id="d_0" class="digit">0</div>
+      <div id="d_1" class="digit">1</div>
+      <div id="d_2" class="digit">2</div>
+      <div id="d_3" class="digit">3</div>
+      <div id="d_4" class="digit">4</div>
+      <div id="d_5" class="digit">5</div>
+      <div id="d_6" class="digit">6</div>
+      <div id="d_7" class="digit">7</div>
+      <div id="d_8" class="digit">8</div>
+      <div id="d_9" class="digit">9</div>
+    </div>
+  </nav>
+  <canvas id="canvas"></canvas>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const digits = document.querySelectorAll('.digit');
+    let coord = { x: 0, y: 0 };
+    let bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
+    canvas.addEventListener("mousedown", start);
+    canvas.addEventListener("mouseup", stop);
+    canvas.addEventListener("touchstart", start);
+    canvas.addEventListener("touchend", stop);
+    document.getElementById("clear").addEventListener("click", clear);
+    window.addEventListener("resize", resize);
+
+    resize();
+
+    digits.forEach(function (element) {
+      element.addEventListener('click', drawYourself);
+    });
+    function drawYourself(event) {
+      let id = event.target.id;
+      id = id.replace("d_", "");
+      fetch("/draw/" + id, { method: "GET" }).then(r => r.blob()).then(image => {
+        let outside = URL.createObjectURL(image)
+        let img = new Image;
+        img.onload = function () {
+          let width = ctx.canvas.width;
+          let height = ctx.canvas.height;
+          let size = Math.min(width, height);
+          let imgSize = size / 3;
+          let leftOffset = (width - imgSize)/2
+          let topOffset = (height - imgSize)/2
+          ctx.drawImage(img, leftOffset, topOffset, imgSize, imgSize);
+        }
+        img.src = outside;
+      });
+    }
+    function resize() {
+      ctx.canvas.width = window.innerWidth;
+      ctx.canvas.height = window.innerHeight;
+    }
+    function reposition(event) {
+      if (event.type == 'touchmove') {
+        let touch = event.originalEvent ? (event.originalEvent.touches[0] || event.originalEvent.changedTouches[0]) : event.touches[0];
+        coord.x = touch.pageX;
+        coord.y = touch.pageY;
+      } else {
+        coord.x = event.clientX - canvas.offsetLeft;
+        coord.y = event.clientY - canvas.offsetTop;
+      }
+      if (coord.x > bounds.x.max) bounds.x.max = coord.x;
+      if (coord.y > bounds.y.max) bounds.y.max = coord.y;
+      if (coord.x < bounds.x.min) bounds.x.min = coord.x;
+      if (coord.y < bounds.y.min) bounds.y.min = coord.y;
+    }
+    function start(event) {
+      document.addEventListener("mousemove", draw);
+      document.addEventListener("touchmove", draw);
+      reposition(event);
+    }
+    function stop() {
+      document.removeEventListener("mousemove", draw);
+      document.removeEventListener("touchmove", draw);
+      let hiddenCanvas = document.getElementById("hidden_canvas");
+      if (hiddenCanvas) hiddenCanvas.parentNode.removeChild(hiddenCanvas);
+      hiddenCanvas = document.createElement('canvas');
+      hiddenCanvas.id = "hidden_canvas";
+      hiddenCanvas.style.display = 'none';
+      document.body.appendChild(hiddenCanvas);
+      let digit_width = bounds.x.max - bounds.x.min, digit_height = bounds.y.max - bounds.y.min
+      let size = Math.max(digit_width, digit_height) + 20
+      hiddenCanvas.width = size;
+      hiddenCanvas.height = size;
+
+      var hiddenCtx = hiddenCanvas.getContext('2d');
+      hiddenCtx.fillStyle = "white";
+      hiddenCtx.fillRect(0, 0, canvas.width, canvas.height);
+      hiddenCtx.drawImage(
+        canvas,
+        bounds.x.min - 10,
+        bounds.y.min - 10,
+        digit_width + 20,
+        digit_height + 20,
+        (size - digit_width) / 2,
+        (size - digit_height) / 2,
+        digit_width,
+        digit_height
+      );
+
+      hiddenCanvas.toBlob((blob) => {
+        var formData = new FormData();
+        formData.append("file", blob);
+        fetch("/recognize", { method: "POST", body: formData }).then(r => r.json()).then(d => {
+          for (let i in digits) digits[i].style = "background:" + increaseBrightness("#ff0000", d[i]);
+        });
+      }, "image/jpeg", 0.90);
+    }
+    function draw(event) {
+      ctx.beginPath();
+      ctx.lineWidth = 10;
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#000000";
+      ctx.moveTo(coord.x, coord.y);
+      reposition(event);
+      ctx.lineTo(coord.x, coord.y);
+      ctx.stroke();
+    }
+    function clear() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
+      for (let i in digits) digits[i].style = "";
+    }
+    function debounce(func, delay) {
+      let inDebounce
+      return function () {
+        const context = this
+        const args = arguments
+        clearTimeout(inDebounce)
+        inDebounce = setTimeout(function () {
+          func.apply(context, args);
+        }, delay)
+      }
+    }
+    function increaseBrightness(hex, percent) {
+      hex = hex.replace(/^\s*#|\s*$/g, '');
+      if (hex.length == 3) {
+        hex = hex.replace(/(.)/g, '$1$1');
+      }
+      var r = parseInt(hex.substr(0, 2), 16),
         g = parseInt(hex.substr(2, 2), 16),
         b = parseInt(hex.substr(4, 2), 16);
 
-    return '#' +
-       ((0|(1<<8) + ( r) * percent).toString(16)).substr(1) +
-       ((0|(1<<8) + ( g) * percent).toString(16)).substr(1) +
-       ((0|(1<<8) + ( b) * percent).toString(16)).substr(1);
-}
-</script>
+      return '#' +
+        ((0 | (1 << 8) + (r) * percent).toString(16)).substr(1) +
+        ((0 | (1 << 8) + (g) * percent).toString(16)).substr(1) +
+        ((0 | (1 << 8) + (b) * percent).toString(16)).substr(1);
+    }
+  </script>
 </body>
+
 </html>
