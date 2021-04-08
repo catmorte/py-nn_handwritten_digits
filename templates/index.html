@@ -96,6 +96,7 @@
       let id = event.target.id;
       id = id.replace("d_", "");
       fetch("/draw/" + id, { method: "GET" }).then(r => r.blob()).then(image => {
+        clear();
         let outside = URL.createObjectURL(image)
         let img = new Image;
         img.onload = function () {
