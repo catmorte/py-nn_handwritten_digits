@@ -45,7 +45,7 @@ if __name__ == "__main__":
     model.compile(
         optimizer=krs.optimizers.Adam(),
         loss=krs.losses.Huber(),
-        metrics=[krs.metrics.BinaryCrossentropy()],
+        metrics=[krs.metrics.CosineSimilarity()],
     )
 
     model.fit(

@@ -1,10 +1,8 @@
 from io import BytesIO
-
-import numpy
 from PIL import Image
 from PIL.ImageOps import invert
 from flask import Flask, jsonify, render_template, request, send_file
-from digits_model.digits import predict_digit_from_img, predict_digit_from_dig_dec, predict_bi_digit_from_img
+from digits_model.digits import predict_digit_from_img, predict_digit_from_dig_dec
 import tensorflow as tf
 import os
 app = Flask(__name__)
@@ -19,8 +17,6 @@ def index():
 def recognize():
     img = Image.open(request.files['file'].stream)
     prediction = predict_digit_from_img(img, is_negative=False)
-    bi_prediction = predict_bi_digit_from_img(img, is_negative=False)
-    tf.keras.preprocessing.image.array_to_img(bi_prediction).save("./bi_img.png")
     return str([x for x in prediction])
 
 
