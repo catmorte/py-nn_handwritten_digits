@@ -27,16 +27,15 @@ if __name__ == "__main__":
     val_ds = val_ds.batch(1)
     model = krs.Sequential()
 
-    activation = tf.nn.elu
 
-    model.add(krs.layers.Dense(10, activation=activation, input_shape=(10,)))
-    model.add(krs.layers.Dense(128, activation=activation))
-    model.add(krs.layers.Dense(64, activation=activation))
+    model.add(krs.layers.Dense(10, activation=tf.nn.elu, input_shape=(10,)))
+    model.add(krs.layers.Dense(128, activation=tf.nn.elu))
+    model.add(krs.layers.Dense(64, activation=tf.nn.elu))
     model.add(krs.layers.Reshape((8, 8, 1)))
     model.add(tf.keras.layers.UpSampling2D((1, 1)))
-    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=activation))
+    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.elu))
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
-    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=activation, kernel_initializer='he_uniform', padding='same'))
+    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.elu, kernel_initializer='he_uniform', padding='same'))
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
     model.add(tf.keras.layers.Conv2D(1, (2, 2), activation=tf.nn.sigmoid, padding='same'))
     model.add(krs.layers.Flatten())
