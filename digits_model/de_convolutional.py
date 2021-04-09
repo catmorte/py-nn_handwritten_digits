@@ -27,15 +27,16 @@ if __name__ == "__main__":
     val_ds = val_ds.batch(1)
     model = krs.Sequential()
 
-    model.add(krs.layers.Dense(10, activation=tf.nn.relu, input_shape=(10,)))
-    model.add(krs.layers.Dense(128, activation=tf.nn.relu))
-    model.add(krs.layers.Dense(64, activation=tf.nn.relu))
-    model.summary()
+    activation = tf.nn.elu
+
+    model.add(krs.layers.Dense(10, activation=activation, input_shape=(10,)))
+    model.add(krs.layers.Dense(128, activation=activation))
+    model.add(krs.layers.Dense(64, activation=activation))
     model.add(krs.layers.Reshape((8, 8, 1)))
     model.add(tf.keras.layers.UpSampling2D((1, 1)))
-    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.relu))
+    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=activation))
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
-    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.relu, kernel_initializer='he_uniform', padding='same'))
+    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=activation, kernel_initializer='he_uniform', padding='same'))
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
     model.add(tf.keras.layers.Conv2D(1, (2, 2), activation=tf.nn.sigmoid, padding='same'))
     model.add(krs.layers.Flatten())
@@ -50,8 +51,8 @@ if __name__ == "__main__":
 
     model.fit(
         train_ds.repeat(),
-        epochs=32,
-        steps_per_epoch=1024,
+        epochs=16,
+        steps_per_epoch=2048,
         validation_data=val_ds
     )
     model.save('./assets/trained_model_dec')
