@@ -3,7 +3,7 @@ import tensorflow.keras as krs
 import numpy as np
 
 model = krs.models.load_model('./assets/trained_model_v2')
-modelDe = krs.models.load_model('./assets/trained_model_dec')
+modelDe = krs.models.load_model('./assets/trained_model_dec_v2')
 
 
 def predict_digit_from_file(image_path, *, color_mode="grayscale", is_negative=False):

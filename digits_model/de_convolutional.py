@@ -33,9 +33,12 @@ if __name__ == "__main__":
     model.add(krs.layers.Reshape((8, 8, 1)))
     model.add(tf.keras.layers.UpSampling2D((1, 1)))
     model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.elu))
+    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.elu, padding='same'))
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
     model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.elu, kernel_initializer='he_uniform', padding='same'))
+    model.add(tf.keras.layers.Conv2D(2, (2, 2), activation=tf.nn.elu, kernel_initializer='he_uniform', padding='same'))
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
+    model.add(tf.keras.layers.Conv2D(1, (2, 2), activation=tf.nn.sigmoid, padding='same'))
     model.add(tf.keras.layers.Conv2D(1, (2, 2), activation=tf.nn.sigmoid, padding='same'))
     model.add(krs.layers.Flatten())
 
@@ -51,4 +54,4 @@ if __name__ == "__main__":
         steps_per_epoch=2048,
         validation_data=val_ds
     )
-    model.save('./assets/trained_model_dec')
+    model.save('./assets/trained_model_dec_v2')
