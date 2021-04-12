@@ -27,7 +27,6 @@ if __name__ == "__main__":
     val_ds = val_ds.batch(1)
     model = krs.Sequential()
 
-
     model.add(krs.layers.Dense(10, activation=tf.nn.elu, input_shape=(10,)))
     model.add(krs.layers.Dense(128, activation=tf.nn.elu))
     model.add(krs.layers.Dense(64, activation=tf.nn.elu))
@@ -39,8 +38,6 @@ if __name__ == "__main__":
     model.add(tf.keras.layers.UpSampling2D((2, 2)))
     model.add(tf.keras.layers.Conv2D(1, (2, 2), activation=tf.nn.sigmoid, padding='same'))
     model.add(krs.layers.Flatten())
-
-    model.summary()
 
     model.compile(
         optimizer=krs.optimizers.Adam(),
