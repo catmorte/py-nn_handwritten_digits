@@ -22,10 +22,15 @@ if __name__ == "__main__":
     model = krs.Sequential()
     model.add(krs.layers.Reshape((28, 28, 1), input_shape=(1, 784)))
     model.add(krs.layers.Conv2D(28, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+    model.add(krs.layers.Conv2D(28, (3, 3), activation='relu', padding='same'))
     model.add(krs.layers.MaxPooling2D((2, 2)))
-    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu'))
+    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu', padding='same'))
+    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu', padding='same'))
     model.add(krs.layers.MaxPooling2D((2, 2)))
-    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu'))
+    model.summary()
+    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu', padding='same'))
+    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu', padding='same'))
+    model.add(krs.layers.Conv2D(56, (3, 3), activation='relu', padding='same'))
     model.add(krs.layers.Flatten())
     model.add(krs.layers.Dense(56, activation=tf.nn.relu))
     model.add(krs.layers.Dense(10, activation=tf.nn.softmax))
@@ -40,4 +45,4 @@ if __name__ == "__main__":
         epochs=16,
         steps_per_epoch=1024,
     )
-    model.save('./assets/trained_model')
+    model.save('./assets/trained_model_v2')
