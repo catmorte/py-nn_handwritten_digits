@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow.keras as krs
 import numpy as np
 
-model = krs.models.load_model('./assets/trained_model')
+model = krs.models.load_model('./assets/trained_model_v2')
 modelDe = krs.models.load_model('./assets/trained_model_dec')
 
 
