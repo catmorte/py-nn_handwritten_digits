@@ -24,6 +24,11 @@ def predict_digit_from_img(img, *, is_negative=False):
     return model.predict(data)[0]
 
 
+def predict_digit_from_images(imgs, *, is_negative=False):
+    data = [np.asarray([255 - x if not is_negative else x for x in data]).reshape((1, 784)) for data in imgs]
+    return model.predict(data)
+
+
 def predict_digit_from_dig_dec(digit):
     data = np.zeros((1, 10))
     data[0, digit] = 1

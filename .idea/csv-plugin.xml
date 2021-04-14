@@ -10,6 +10,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\digits_model\region_convultional.py">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
       </map>
     </option>
   </component>
