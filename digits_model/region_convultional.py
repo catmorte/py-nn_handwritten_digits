@@ -31,15 +31,15 @@ def resize(image, width=None, height=None):
     if width is None and height is None:
         return image
     (h, w) = image.shape[:2]
-    resW, resH = width, height
+    res_w, res_h = width, height
     if width is not None:
         r = width / float(w)
-        resH = int(h * r)
+        res_h = int(h * r)
     else:
         r = height / float(h)
-        resW = int(w * r)
+        res_w = int(w * r)
 
-    resizing = tf.keras.layers.experimental.preprocessing.Resizing(height=resH, width=resW, interpolation='area')
+    resizing = tf.keras.layers.experimental.preprocessing.Resizing(height=res_h, width=res_w, interpolation='area')
     return resizing(image)
 
 
@@ -57,40 +57,28 @@ def non_max_suppression(boxes, predictions, labels, overlap_thresh=0.3):
     x2 = boxes[:, 2]
     y2 = boxes[:, 3]
 
-    # compute the area of the bounding boxes and grab the indexes to sort
-    # (in the case that no probabilities are provided, simply sort on the
-    # bottom-left y-coordinate)
     area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    idxs = y2
+    indexes = y2
 
-    # if probabilities are provided, sort on them instead
     if predictions is not None:
-        idxs = predictions
+        indexes = predictions
 
-    # sort the indexes
-    idxs = np.argsort(idxs)
-    # keep looping while some indexes still remain in the indexes list
-    while len(idxs) > 0:
-        # grab the last index in the indexes list and add the index value
-        # to the list of picked indexes
-        last = len(idxs) - 1
-        i = idxs[last]
+    indexes = np.argsort(indexes)
+    while len(indexes) > 0:
+        last = len(indexes) - 1
+        i = indexes[last]
         pick.append(i)
-        # find the largest (x, y) coordinates for the start of the bounding
-        # box and the smallest (x, y) coordinates for the end of the bounding
-        # box
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
+        xx1 = np.maximum(x1[i], x1[indexes[:last]])
+        yy1 = np.maximum(y1[i], y1[indexes[:last]])
+        xx2 = np.minimum(x2[i], x2[indexes[:last]])
+        yy2 = np.minimum(y2[i], y2[indexes[:last]])
 
-        # compute the width and height of the bounding box
         w = np.maximum(0, xx2 - xx1 + 1)
         h = np.maximum(0, yy2 - yy1 + 1)
 
-        overlap = (w * h) / area[idxs[:last]]
+        overlap = (w * h) / area[indexes[:last]]
 
-        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlap_thresh)[0])))
+        indexes = np.delete(indexes, np.concatenate(([last], np.where(overlap > overlap_thresh)[0])))
 
     return boxes[pick].astype("int"), labels[pick]
 
@@ -98,7 +86,7 @@ def non_max_suppression(boxes, predictions, labels, overlap_thresh=0.3):
 if __name__ == "__main__":
     original_resized_width = 300
     model_input_size = (28, 28)
-    window_step = 12
+    window_step = 9
     pyramid_scale = 1.5
     min_pyramid_size = (28, 28)
     window_size = (28, 28)
@@ -124,19 +112,19 @@ if __name__ == "__main__":
                 locations.append((x, y, x + w, y + h))
 
         predictions = predict_digit_from_arrays(regions, is_negative=False)
-        boxes_and_predictions_per_label = {}
+        box_prediction_by_label = {}
 
         for (i, p) in enumerate(predictions):
             label, prob = max(enumerate(p), key=operator.itemgetter(1))
             if prob >= prediction_level:
                 box = locations[i]
-                L = boxes_and_predictions_per_label.get(label, [])
+                L = box_prediction_by_label.get(label, [])
                 L.append((box, prob))
-                boxes_and_predictions_per_label[label] = L
+                box_prediction_by_label[label] = L
 
-        boxes = np.array([p[0] for key in boxes_and_predictions_per_label for p in boxes_and_predictions_per_label[key]])
-        all_predictions = np.array([p[1] for key in boxes_and_predictions_per_label for p in boxes_and_predictions_per_label[key]])
-        names = np.array([key for key in boxes_and_predictions_per_label for p in boxes_and_predictions_per_label[key]])
+        boxes = np.array([p[0] for key in box_prediction_by_label for p in box_prediction_by_label[key]])
+        all_predictions = np.array([p[1] for key in box_prediction_by_label for p in box_prediction_by_label[key]])
+        names = np.array([key for key in box_prediction_by_label for p in box_prediction_by_label[key]])
         draw = ImageDraw(original)
 
         boxes, names = non_max_suppression(boxes, all_predictions, names, overlap_thresh=0.1)
