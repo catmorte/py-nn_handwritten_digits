@@ -1,11 +1,14 @@
+import operator
+
 import tensorflow as tf
 from PIL import Image
 import tensorflow.keras as krs
+from PIL.ImageDraw import ImageDraw
 from tensorflow.keras.applications.resnet import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 import numpy as np
 
-from digits_model.digits import predict_digit_from_images
+from digits_model.digits import predict_digit_from_arrays
 
 
 def sliding_window(image, step, ws):
@@ -14,7 +17,7 @@ def sliding_window(image, step, ws):
             yield x, y, image[y:y + ws[1], x:x + ws[0]]
 
 
-def image_pyramid(image, scale=1.5, min_size=(28, 28)):
+def image_pyramid(image, scale, min_size):
     yield image
     while True:
         w = int(image.shape[1] / scale)
@@ -40,20 +43,15 @@ def resize(image, width=None, height=None):
     return resizing(image)
 
 
-def non_max_suppression(boxes, probs=None, overlap_thresh=0.3):
-    # if there are no boxes, return an empty list
+def non_max_suppression(boxes, predictions, labels, overlap_thresh=0.3):
     if len(boxes) == 0:
-        return []
+        return [], []
 
-    # if the bounding boxes are integers, convert them to floats -- this
-    # is important since we'll be doing a bunch of divisions
     if boxes.dtype.kind == "i":
         boxes = boxes.astype("float")
 
-    # initialize the list of picked indexes
     pick = []
 
-    # grab the coordinates of the bounding boxes
     x1 = boxes[:, 0]
     y1 = boxes[:, 1]
     x2 = boxes[:, 2]
@@ -66,12 +64,11 @@ def non_max_suppression(boxes, probs=None, overlap_thresh=0.3):
     idxs = y2
 
     # if probabilities are provided, sort on them instead
-    if probs is not None:
-        idxs = probs
+    if predictions is not None:
+        idxs = predictions
 
     # sort the indexes
     idxs = np.argsort(idxs)
-
     # keep looping while some indexes still remain in the indexes list
     while len(idxs) > 0:
         # grab the last index in the indexes list and add the index value
@@ -79,7 +76,6 @@ def non_max_suppression(boxes, probs=None, overlap_thresh=0.3):
         last = len(idxs) - 1
         i = idxs[last]
         pick.append(i)
-
         # find the largest (x, y) coordinates for the start of the bounding
         # box and the smallest (x, y) coordinates for the end of the bounding
         # box
@@ -92,81 +88,64 @@ def non_max_suppression(boxes, probs=None, overlap_thresh=0.3):
         w = np.maximum(0, xx2 - xx1 + 1)
         h = np.maximum(0, yy2 - yy1 + 1)
 
-        # compute the ratio of overlap
         overlap = (w * h) / area[idxs[:last]]
 
-        # delete all indexes from the index list that have overlap greater
-        # than the provided overlap threshold
-        idxs = np.delete(idxs, np.concatenate(([last],
-                                               np.where(overlap > overlap_thresh)[0])))
+        idxs = np.delete(idxs, np.concatenate(([last], np.where(overlap > overlap_thresh)[0])))
 
-    # return only the bounding boxes that were picked
-    return boxes[pick].astype("int")
+    return boxes[pick].astype("int"), labels[pick]
 
 
-WIDTH = 600
-PYR_SCALE = 1.5
-WIN_STEP = 16
-ROI_SIZE = (25, 25)
-INPUT_SIZE = (28, 28)
 if __name__ == "__main__":
-    orig = Image.open("./original.png").convert('L')
-    orig = tf.keras.preprocessing.image.img_to_array(orig)
-    orig = resize(orig, width=WIDTH)
-    tf.keras.preprocessing.image.array_to_img(orig).save("original_resized.png")
+    original_resized_width = 300
+    model_input_size = (28, 28)
+    window_step = 12
+    pyramid_scale = 1.5
+    min_pyramid_size = (28, 28)
+    window_size = (28, 28)
+    prediction_level = 0.90
+    with Image.open("./original_2.png") as original:
+        global_scale = original.width / original_resized_width
+        original_resized = original.convert('L')
+        original_resized = tf.keras.preprocessing.image.img_to_array(original_resized)
+        original_resized = resize(original_resized, width=original_resized_width)
+        (H, W) = original_resized.shape[:2]
+        regions = []
+        locations = []
 
-    (H, W) = orig.shape[:2]
-    pyramid = image_pyramid(orig, scale=PYR_SCALE, min_size=ROI_SIZE)
-    rois = []
-    locs = []
+        for image in image_pyramid(original_resized, scale=pyramid_scale, min_size=min_pyramid_size):
+            scale = W / float(image.shape[1])
+            for (x, y, roiOrig) in sliding_window(image, step=window_step, ws=window_size):
+                x = int(x * scale)
+                y = int(y * scale)
+                w = int(window_size[0] * scale)
+                h = int(window_size[1] * scale)
+                roi = resize(roiOrig, *model_input_size)
+                regions.append(roi)
+                locations.append((x, y, x + w, y + h))
 
-    pyr_i = 0
-    for image in pyramid:
-        pyr_i += 1
-        scale = W / float(image.shape[1])
-        roi_i = 0
-        for (x, y, roiOrig) in sliding_window(image, WIN_STEP, ROI_SIZE):
-            roi_i += 1
-            x = int(x * scale)
-            y = int(y * scale)
-            w = int(ROI_SIZE[0] * scale)
-            h = int(ROI_SIZE[1] * scale)
-            roi = resize(roiOrig, *INPUT_SIZE)
-            rois.append(roi)
-            locs.append((x, y, x + w, y + h))
+        predictions = predict_digit_from_arrays(regions, is_negative=False)
+        boxes_and_predictions_per_label = {}
 
-    # rois = np.array(rois, dtype="float32")
+        for (i, p) in enumerate(predictions):
+            label, prob = max(enumerate(p), key=operator.itemgetter(1))
+            if prob >= prediction_level:
+                box = locations[i]
+                L = boxes_and_predictions_per_label.get(label, [])
+                L.append((box, prob))
+                boxes_and_predictions_per_label[label] = L
 
-    preds = predict_digit_from_images(rois, is_negative=False)
-    labels = {}
-    for (i, p) in enumerate(preds):
-        # grab the prediction information for the current ROI
-        (imagenetID, label, prob) = p[0]
-        # filter out weak detections by ensuring the predicted probability
-        # is greater than the minimum probability
-        if prob >= 0.95:
-            # grab the bounding box associated with the prediction and
-            # convert the coordinates
-            box = locs[i]
-            # grab the list of predictions for the label and add the
-            # bounding box and probability to the list
-            L = labels.get(label, [])
-            L.append((box, prob))
-            labels[label] = L
+        boxes = np.array([p[0] for key in boxes_and_predictions_per_label for p in boxes_and_predictions_per_label[key]])
+        all_predictions = np.array([p[1] for key in boxes_and_predictions_per_label for p in boxes_and_predictions_per_label[key]])
+        names = np.array([key for key in boxes_and_predictions_per_label for p in boxes_and_predictions_per_label[key]])
+        draw = ImageDraw(original)
 
-    boxes = np.array([p[0] for p in labels[label]])
-    proba = np.array([p[1] for p in labels[label]])
-    boxes = non_max_suppression(boxes, proba)
-
-    # loop over all bounding boxes that were kept after applying
-    # non-maxima suppression
-    # for (startX, startY, endX, endY) in boxes:
-    #     # draw the bounding box and label on the image
-    #     cv2.rectangle(clone, (startX, startY), (endX, endY),
-    #                   (0, 255, 0), 2)
-    #     y = startY - 10 if startY - 10 > 10 else startY + 10
-    #     cv2.putText(clone, label, (startX, y),
-    #                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
-    # # show the output after apply non-maxima suppression
-    # cv2.imshow("After", clone)
-    # cv2.waitKey(0)
+        boxes, names = non_max_suppression(boxes, all_predictions, names, overlap_thresh=0.1)
+        for j in range(len(boxes)):
+            box = boxes[j]
+            draw.ellipse(list(box * global_scale), outline="#00f000", width=2)
+            draw.text(
+                [(box[0] + box[2]) * global_scale / 2, box[1] * global_scale],
+                f"{names[j]}",
+                fill="#00f000",
+                stroke_width=5)
+        original.save(f"./draw.png")
