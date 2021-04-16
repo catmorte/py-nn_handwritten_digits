@@ -20,13 +20,30 @@
       flex-direction: column;
     }
 
+    .buttons {
+      width: 100%;
+      display: flex;
+      margin: 0;
+    }
+
     #clear {
       border: 0;
       background: #000000;
       color: #ffffff;
-      width: 100%;
+      width: 50%;
       padding: 1rem;
       margin: 0;
+      cursor: pointer;
+    }
+
+    #detect_all{
+      border: 0;
+      background: #00a000;
+      color: #ffffff;
+      width: 50%;
+      padding: 1rem;
+      margin: 0;
+      cursor: pointer;
     }
 
     .digits {
@@ -58,7 +75,10 @@
 
 <body>
   <nav>
-    <button id="clear">Clear</button>
+    <div class="buttons">
+      <button id="clear">Clear</button>
+      <button id="detect_all">Detect</button>
+    </div>
     <div class="digits">
       <button id="d_0" class="digit">0</button>
       <button id="d_1" class="digit">1</button>
@@ -84,14 +104,32 @@
     canvas.addEventListener("touchstart", start);
     canvas.addEventListener("touchend", stop);
     document.getElementById("clear").addEventListener("click", clear);
+    document.getElementById("detect_all").addEventListener("click", detect);
     window.addEventListener("resize", resize);
 
     resize();
+    clear();
     let needToReset = false;
 
     digits.forEach(function (element) {
       element.addEventListener('click', drawYourself);
     });
+    function detect(){
+      canvas.toBlob((blob) => {
+        var formData = new FormData();
+        formData.append("file", blob);
+        fetch("/detect", { method: "POST", body: formData }).then(r => r.blob()).then(image => {
+          clear();
+          let outside = URL.createObjectURL(image)
+          let img = new Image;
+          img.onload = function () {
+            ctx.drawImage(img, 0, 0, ctx.canvas.width, ctx.canvas.height);
+            needToReset = true;
+          }
+          img.src = outside;
+        });
+      }, "image/jpeg", 0.90);
+    }
     function drawYourself(event) {
       let id = event.target.id;
       id = id.replace("d_", "");
@@ -187,7 +225,10 @@
       ctx.stroke();
     }
     function clear() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "black";
+
       bounds = { x: { min: 99999999999, max: -99999999999 }, y: { min: 99999999999, max: -99999999999 } }
       for (let i in digits) digits[i].style = "";
     }

@@ -1,12 +1,9 @@
 import operator
 
+import numpy as np
 import tensorflow as tf
 from PIL import Image
-import tensorflow.keras as krs
 from PIL.ImageDraw import ImageDraw
-from tensorflow.keras.applications.resnet import preprocess_input
-from tensorflow.keras.preprocessing.image import img_to_array
-import numpy as np
 
 from digits_model.digits import predict_digit_from_arrays
 
@@ -83,57 +80,56 @@ def non_max_suppression(boxes, predictions, labels, overlap_thresh=0.3):
     return boxes[pick].astype("int"), labels[pick]
 
 
-if __name__ == "__main__":
+def detect_digits_on_image(original, is_negative=False):
     original_resized_width = 300
     model_input_size = (28, 28)
     window_step = 9
     pyramid_scale = 1.5
     min_pyramid_size = (28, 28)
     window_size = (28, 28)
-    prediction_level = 0.90
-    with Image.open("./original_2.png") as original:
-        global_scale = original.width / original_resized_width
-        original_resized = original.convert('L')
-        original_resized = tf.keras.preprocessing.image.img_to_array(original_resized)
-        original_resized = resize(original_resized, width=original_resized_width)
-        (H, W) = original_resized.shape[:2]
-        regions = []
-        locations = []
+    prediction_level = 0.95
+    global_scale = original.width / original_resized_width
+    original_resized = original.convert('L')
+    original_resized = tf.keras.preprocessing.image.img_to_array(original_resized)
+    original_resized = resize(original_resized, width=original_resized_width)
+    (H, W) = original_resized.shape[:2]
+    regions = []
+    locations = []
 
-        for image in image_pyramid(original_resized, scale=pyramid_scale, min_size=min_pyramid_size):
-            scale = W / float(image.shape[1])
-            for (x, y, roiOrig) in sliding_window(image, step=window_step, ws=window_size):
-                x = int(x * scale)
-                y = int(y * scale)
-                w = int(window_size[0] * scale)
-                h = int(window_size[1] * scale)
-                roi = resize(roiOrig, *model_input_size)
-                regions.append(roi)
-                locations.append((x, y, x + w, y + h))
+    for image in image_pyramid(original_resized, scale=pyramid_scale, min_size=min_pyramid_size):
+        scale = W / float(image.shape[1])
+        for (x, y, roiOrig) in sliding_window(image, step=window_step, ws=window_size):
+            x = int(x * scale)
+            y = int(y * scale)
+            w = int(window_size[0] * scale)
+            h = int(window_size[1] * scale)
+            roi = resize(roiOrig, *model_input_size)
+            regions.append(roi)
+            locations.append((x, y, x + w, y + h))
 
-        predictions = predict_digit_from_arrays(regions, is_negative=False)
-        box_prediction_by_label = {}
+    predictions = predict_digit_from_arrays(regions, is_negative=is_negative)
+    box_prediction_by_label = {}
 
-        for (i, p) in enumerate(predictions):
-            label, prob = max(enumerate(p), key=operator.itemgetter(1))
-            if prob >= prediction_level:
-                box = locations[i]
-                L = box_prediction_by_label.get(label, [])
-                L.append((box, prob))
-                box_prediction_by_label[label] = L
+    for (i, p) in enumerate(predictions):
+        label, prob = max(enumerate(p), key=operator.itemgetter(1))
+        if prob >= prediction_level:
+            box = locations[i]
+            L = box_prediction_by_label.get(label, [])
+            L.append((box, prob))
+            box_prediction_by_label[label] = L
 
-        boxes = np.array([p[0] for key in box_prediction_by_label for p in box_prediction_by_label[key]])
-        all_predictions = np.array([p[1] for key in box_prediction_by_label for p in box_prediction_by_label[key]])
-        names = np.array([key for key in box_prediction_by_label for p in box_prediction_by_label[key]])
-        draw = ImageDraw(original)
+    boxes = np.array([p[0] for key in box_prediction_by_label for p in box_prediction_by_label[key]])
+    all_predictions = np.array([p[1] for key in box_prediction_by_label for p in box_prediction_by_label[key]])
+    names = np.array([key for key in box_prediction_by_label for p in box_prediction_by_label[key]])
+    draw = ImageDraw(original)
 
-        boxes, names = non_max_suppression(boxes, all_predictions, names, overlap_thresh=0.1)
-        for j in range(len(boxes)):
-            box = boxes[j]
-            draw.ellipse(list(box * global_scale), outline="#00f000", width=2)
-            draw.text(
-                [(box[0] + box[2]) * global_scale / 2, box[1] * global_scale],
-                f"{names[j]}",
-                fill="#00f000",
-                stroke_width=5)
-        original.save(f"./draw.png")
+    boxes, names = non_max_suppression(boxes, all_predictions, names, overlap_thresh=0.15)
+    for j in range(len(boxes)):
+        box = boxes[j]
+        draw.ellipse(list(box * global_scale), outline="#00f000", width=2)
+        draw.text(
+            [(box[0] + box[2]) * global_scale / 2, box[1] * global_scale],
+            f"{names[j]}",
+            fill="#00f000",
+            stroke_width=5)
+    return original
