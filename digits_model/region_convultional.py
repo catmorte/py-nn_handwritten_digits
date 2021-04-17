@@ -2,7 +2,6 @@ import operator
 
 import numpy as np
 import tensorflow as tf
-from PIL import Image
 from PIL.ImageDraw import ImageDraw
 
 from digits_model.digits import predict_digit_from_arrays
@@ -40,46 +39,6 @@ def resize(image, width=None, height=None):
     return resizing(image)
 
 
-def non_max_suppression(boxes, predictions, labels, overlap_thresh=0.3):
-    if len(boxes) == 0:
-        return [], []
-
-    if boxes.dtype.kind == "i":
-        boxes = boxes.astype("float")
-
-    pick = []
-
-    x1 = boxes[:, 0]
-    y1 = boxes[:, 1]
-    x2 = boxes[:, 2]
-    y2 = boxes[:, 3]
-
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    indexes = y2
-
-    if predictions is not None:
-        indexes = predictions
-
-    indexes = np.argsort(indexes)
-    while len(indexes) > 0:
-        last = len(indexes) - 1
-        i = indexes[last]
-        pick.append(i)
-        xx1 = np.maximum(x1[i], x1[indexes[:last]])
-        yy1 = np.maximum(y1[i], y1[indexes[:last]])
-        xx2 = np.minimum(x2[i], x2[indexes[:last]])
-        yy2 = np.minimum(y2[i], y2[indexes[:last]])
-
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
-
-        overlap = (w * h) / area[indexes[:last]]
-
-        indexes = np.delete(indexes, np.concatenate(([last], np.where(overlap > overlap_thresh)[0])))
-
-    return boxes[pick].astype("int"), labels[pick]
-
-
 def detect_digits_on_image(original, is_negative=False):
     original_resized_width = 300
     model_input_size = (28, 28)
@@ -87,7 +46,7 @@ def detect_digits_on_image(original, is_negative=False):
     pyramid_scale = 1.5
     min_pyramid_size = (28, 28)
     window_size = (28, 28)
-    prediction_level = 0.95
+    prediction_level = 0.96
     global_scale = original.width / original_resized_width
     original_resized = original.convert('L')
     original_resized = tf.keras.preprocessing.image.img_to_array(original_resized)
@@ -123,13 +82,16 @@ def detect_digits_on_image(original, is_negative=False):
     names = np.array([key for key in box_prediction_by_label for p in box_prediction_by_label[key]])
     draw = ImageDraw(original)
 
-    boxes, names = non_max_suppression(boxes, all_predictions, names, overlap_thresh=0.15)
-    for j in range(len(boxes)):
+    selected_indices = tf.image.non_max_suppression(
+        boxes, all_predictions, len(all_predictions), 0.15)
+
+    for j in selected_indices:
         box = boxes[j]
+        name = names[j]
         draw.ellipse(list(box * global_scale), outline="#00f000", width=2)
         draw.text(
             [(box[0] + box[2]) * global_scale / 2, box[1] * global_scale],
-            f"{names[j]}",
+            f"{name}",
             fill="#00f000",
             stroke_width=5)
     return original
