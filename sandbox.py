@@ -26,9 +26,7 @@ def recognize():
 @app.route('/detect', methods=['POST'])
 def detect():
     img = Image.open(request.files['file'].stream)
-    img.save("./before.png")
     img = detect_digits_on_image(img, is_negative=False)
-    img.save("./after.png")
     return send_image(img)
 
 
