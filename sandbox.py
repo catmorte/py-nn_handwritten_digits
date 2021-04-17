@@ -6,7 +6,7 @@ from digits_model.digits import predict_digit_from_img, predict_digit_from_dig_d
 import tensorflow as tf
 import os
 
-from digits_model.region_convultional import detect_digits_on_image
+from digits_model.detection import detect_digits
 
 app = Flask(__name__)
 
@@ -26,7 +26,7 @@ def recognize():
 @app.route('/detect', methods=['POST'])
 def detect():
     img = Image.open(request.files['file'].stream)
-    img = detect_digits_on_image(img, is_negative=False)
+    img = detect_digits(img, is_negative=False)
     return send_image(img)
 
 
