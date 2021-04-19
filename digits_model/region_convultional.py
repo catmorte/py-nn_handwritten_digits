@@ -41,11 +41,6 @@ def resize(image, width=None, height=None):
 
 def detect_digits_on_image(original, is_negative=False):
     original_resized_width = 300
-    model_input_size = (28, 28)
-    window_step = 9
-    pyramid_scale = 1.5
-    min_pyramid_size = (28, 28)
-    window_size = (28, 28)
     prediction_level = 0.96
     global_scale = original.width / original_resized_width
     original_resized = original.convert('L')
@@ -55,16 +50,7 @@ def detect_digits_on_image(original, is_negative=False):
     regions = []
     locations = []
 
-    for image in image_pyramid(original_resized, scale=pyramid_scale, min_size=min_pyramid_size):
-        scale = W / float(image.shape[1])
-        for (x, y, roiOrig) in sliding_window(image, step=window_step, ws=window_size):
-            x = int(x * scale)
-            y = int(y * scale)
-            w = int(window_size[0] * scale)
-            h = int(window_size[1] * scale)
-            roi = resize(roiOrig, *model_input_size)
-            regions.append(roi)
-            locations.append((x, y, x + w, y + h))
+    regions, locations = get_regions(original_resized)
 
     predictions = predict_digit_from_arrays(regions, is_negative=is_negative)
     box_prediction_by_label = {}
@@ -95,3 +81,23 @@ def detect_digits_on_image(original, is_negative=False):
             fill="#00f000",
             stroke_width=5)
     return original
+
+
+def get_regions(original, *, pyramid_scale=1.5, min_pyramid_size=(28, 28), window_step=9, window_size=(28, 28),
+                model_input_size=(28, 28)):
+    (H, W) = original.shape[:2]
+
+    regions = []
+    locations = []
+
+    for image in image_pyramid(original, scale=pyramid_scale, min_size=min_pyramid_size):
+        scale = W / float(image.shape[1])
+        for (x, y, roiOrig) in sliding_window(image, step=window_step, ws=window_size):
+            x = int(x * scale)
+            y = int(y * scale)
+            w = int(window_size[0] * scale)
+            h = int(window_size[1] * scale)
+            roi = resize(roiOrig, *model_input_size)
+            regions.append(roi)
+            locations.append((x, y, x + w, y + h))
+    return regions, locations
