@@ -20,7 +20,7 @@ def predict_digit_from_arrays(imgs, *, is_negative=False):
     return model.predict(np.vstack(data))
 
 
-def predict_digit_from_dig_dec(digit):
+def predict_digit_from_int(digit):
     data = np.zeros((1, 10))
     data[0, digit] = 1
     return modelDe.predict(data)[0].reshape(28, 28, 1)

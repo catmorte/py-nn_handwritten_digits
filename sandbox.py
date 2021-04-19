@@ -2,7 +2,7 @@ from io import BytesIO
 from PIL import Image
 from PIL.ImageOps import invert
 from flask import Flask, jsonify, render_template, request, send_file
-from digits_model.digits import predict_digit_from_img, predict_digit_from_dig_dec
+from digits_model.digits import predict_digit_from_img, predict_digit_from_int
 import tensorflow as tf
 import os
 
@@ -32,7 +32,7 @@ def detect():
 
 @app.route('/draw/<int:digit>/', methods=['GET'])
 def recognize_de(digit):
-    prediction = predict_digit_from_dig_dec(digit)
+    prediction = predict_digit_from_int(digit)
     img = invert(tf.keras.preprocessing.image.array_to_img(prediction)).convert('1')
     return send_image(img)
 
