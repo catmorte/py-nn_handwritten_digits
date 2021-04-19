@@ -46,9 +46,6 @@ def detect_digits_on_image(original, is_negative=False):
     original_resized = original.convert('L')
     original_resized = tf.keras.preprocessing.image.img_to_array(original_resized)
     original_resized = resize(original_resized, width=original_resized_width)
-    (H, W) = original_resized.shape[:2]
-    regions = []
-    locations = []
 
     regions, locations = get_regions(original_resized)
 
