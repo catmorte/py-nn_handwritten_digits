@@ -4,13 +4,6 @@ Dataset: https://www.kaggle.com/c/digit-recognizer/code
 Deployed: https://sleepy-springs-74218.herokuapp.com/
 #### Usage
 
-```python
-from digits_model.digits import predict_digit_from_file
-import tensorflow as tf
-
-...
-tf.argmax(predict_digit_from_file("Path to image", color_mode="grayscale", is_negative=False), 1)
-```
 
 ```python
 from digits_model.digits import predict_digit_from_img
